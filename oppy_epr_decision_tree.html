@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oppy US EPR Obligation Decision Tree v5</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  :root {
+    --bg:#ffffff;--bg2:#f5f5f7;--bg3:#ebebed;
+    --border:#d1d1d6;--border2:#c7c7cc;
+    --text:#1c1c1e;--text2:#3c3c43;--text3:#8e8e93;
+    --radius:12px;--radius-sm:8px;
+    --yes:#1D9E75;--yes-bg:#E1F5EE;--yes-txt:#085041;
+    --no:#D85A30;--no-bg:#FAECE7;--no-txt:#4A1B0C;
+    --rev:#7F77DD;--rev-bg:#EEEDFE;--rev-txt:#26215C;
+    --mix:#2563EB;--mix-bg:#EFF6FF;--mix-txt:#1e3a8a;
+    --cond:#B45309;--cond-bg:#FFFBEB;--cond-txt:#78350f;
+    --brand:#1F4E79;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+       background:var(--bg2);color:var(--text);min-height:100vh}
+  #root{max-width:880px;margin:0 auto;padding:24px 16px 48px}
+
+  .header{background:var(--brand);border-radius:var(--radius);padding:20px 24px;
+           margin-bottom:20px;color:#fff}
+  .header h1{font-size:20px;font-weight:700;margin-bottom:4px}
+  .header p{font-size:13px;opacity:.75;line-height:1.5}
+  .ver-badge{display:inline-block;margin-top:8px;font-size:11px;padding:2px 10px;
+              border-radius:20px;background:rgba(255,255,255,.2);color:#fff}
+
+  .prog-wrap{margin-bottom:16px}
+  .prog-bar{display:flex;gap:3px;height:5px;border-radius:3px;overflow:hidden}
+  .prog-seg{flex:1;background:var(--border);border-radius:2px;transition:background .25s}
+  .prog-seg.done{background:var(--yes)}.prog-seg.active{background:var(--rev)}
+  .prog-label{font-size:11px;color:var(--text3);margin-top:6px;
+               text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+
+  .crumb{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px;min-height:22px}
+  .crumb-item{font-size:11px;padding:3px 9px;border-radius:20px;
+               background:var(--bg3);color:var(--text3)}
+  .crumb-item.fa{background:var(--yes-bg);color:var(--yes-txt)}
+  .crumb-item.fb{background:var(--rev-bg);color:var(--rev-txt)}
+  .crumb-item.fc{background:var(--mix-bg);color:var(--mix-txt)}
+
+  .q-card{background:var(--bg);border:1px solid var(--border);
+           border-radius:var(--radius);padding:20px;margin-bottom:12px}
+  .q-eye{font-size:11px;color:var(--text3);margin-bottom:6px;
+          text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+  .q-text{font-size:16px;font-weight:600;line-height:1.45;margin-bottom:10px}
+  .q-hint{font-size:13px;color:var(--text2);line-height:1.6;
+           background:var(--bg2);border-radius:var(--radius-sm);
+           padding:10px 12px;margin-bottom:12px}
+  .q-ex{font-size:12px;color:var(--text3);font-style:italic;margin-top:8px;line-height:1.5}
+  .q-warning{font-size:12px;color:var(--cond-txt);background:var(--cond-bg);
+              border-left:3px solid var(--cond);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+              padding:8px 12px;margin-top:10px;line-height:1.5}
+  .btn-row{display:flex;flex-wrap:wrap;gap:8px}
+  .btn{padding:9px 16px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);
+       background:var(--bg);color:var(--text);font-size:13px;cursor:pointer;
+       transition:all .15s;font-weight:500;text-align:left;line-height:1.4}
+  .btn:hover{background:var(--bg2)}
+  .btn.yes{border-color:var(--yes);color:var(--yes-txt)}.btn.yes:hover{background:var(--yes-bg)}
+  .btn.no{border-color:var(--no);color:var(--no-txt)}.btn.no:hover{background:var(--no-bg)}
+  .btn.rev{border-color:var(--rev);color:var(--rev-txt)}.btn.rev:hover{background:var(--rev-bg)}
+  .btn-restart{font-size:12px;color:var(--text3);background:none;border:none;
+                cursor:pointer;padding:4px 0;margin-top:8px}
+  .btn-restart:hover{color:var(--text2)}
+
+  .result{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .result-hdr{padding:16px 20px;display:flex;align-items:flex-start;gap:12px}
+  .result-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+  .result-title{font-size:16px;font-weight:700;margin-bottom:3px}
+  .result-sub{font-size:12px;opacity:.75}
+  .hdr-yes{background:var(--yes-bg)}.hdr-no{background:var(--no-bg)}
+  .hdr-rev{background:var(--rev-bg)}.hdr-mix{background:var(--mix-bg)}
+  .hdr-cond{background:var(--cond-bg)}.hdr-nc{background:var(--bg3)}
+  .t-yes{color:var(--yes-txt)}.t-no{color:var(--no-txt)}
+  .t-rev{color:var(--rev-txt)}.t-mix{color:var(--mix-txt)}
+  .t-cond{color:var(--cond-txt)}.t-nc{color:var(--text3)}
+
+  .lvl-band{display:flex;border-bottom:1px solid var(--border)}
+  .lvl-pill{flex:1;padding:10px 14px;text-align:center;
+             border-right:1px solid var(--border)}
+  .lvl-pill:last-child{border-right:none}
+  .lvl-label{font-size:10px;font-weight:600;color:var(--text3);
+               text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .lvl-val{font-size:12px;font-weight:600;display:inline-block;
+             padding:2px 8px;border-radius:4px}
+  .lv-yes{background:var(--yes-bg);color:var(--yes-txt)}
+  .lv-no{background:var(--no-bg);color:var(--no-txt)}
+  .lv-rev{background:var(--rev-bg);color:var(--rev-txt)}
+  .lv-cond{background:var(--cond-bg);color:var(--cond-txt)}
+  .lv-na{background:var(--bg3);color:var(--text3)}
+
+  .reason{padding:14px 20px;background:var(--bg);
+           border-bottom:1px solid var(--border);font-size:13px;
+           color:var(--text2);line-height:1.6}
+  .insight{margin-top:10px;padding:10px 14px;background:var(--rev-bg);
+            border-left:3px solid var(--rev);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+            font-size:12px;color:var(--rev-txt);line-height:1.5}
+  .condition{margin-top:10px;padding:10px 14px;background:var(--cond-bg);
+              border-left:3px solid var(--cond);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+              font-size:12px;color:var(--cond-txt);line-height:1.5}
+  .pending{margin-top:10px;padding:10px 14px;background:var(--bg2);
+            border-left:3px solid var(--border2);border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+            font-size:12px;color:var(--text3);line-height:1.5}
+
+  .state-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+               gap:8px;padding:14px 16px;background:var(--bg)}
+  .state-cell{border-radius:var(--radius-sm);padding:10px 12px;
+               border:1px solid var(--border)}
+  .state-name{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:5px;
+               text-transform:uppercase;letter-spacing:.06em}
+  .state-row{font-size:11px;margin-bottom:2px}
+  .state-tier{font-size:10px;color:var(--text3);margin-top:3px;font-style:italic}
+  .sc-yes{color:var(--yes-txt);font-weight:600}
+  .sc-no{color:var(--no-txt);font-weight:600}
+  .sc-rev{color:var(--rev-txt);font-weight:600}
+  .sc-cond{color:var(--cond-txt);font-weight:600}
+  .sc-na{color:var(--text3)}
+  .bg-yes{background:var(--yes-bg);border-color:#a7dfc9}
+  .bg-no{background:var(--no-bg);border-color:#f5c6b4}
+  .bg-rev{background:var(--rev-bg);border-color:#c4bff7}
+  .bg-cond{background:var(--cond-bg);border-color:#fbbf24}
+  .bg-na{background:var(--bg2)}
+
+  .cite{padding:10px 20px;background:var(--bg2);border-top:1px solid var(--border);
+         font-size:11px;color:var(--text3);font-style:italic;line-height:1.6}
+  .restart-row{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn-new{padding:9px 18px;border-radius:var(--radius-sm);border:1.5px solid var(--border2);
+            background:var(--bg);color:var(--text2);font-size:13px;cursor:pointer;font-weight:500}
+  .btn-new:hover{background:var(--bg2)}
+  .footer{margin-top:32px;text-align:center;font-size:11px;color:var(--text3);line-height:1.7}
+</style>
+</head>
+<body>
+<div id="gate" style="display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div style="background:#fff;border:1px solid #d1d1d6;border-radius:16px;padding:40px 36px;
+    max-width:380px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center">
+    <div style="font-size:28px;margin-bottom:8px">🔒</div>
+    <div style="font-size:20px;font-weight:700;color:#1F4E79;margin-bottom:6px">Oppy EPR Tool</div>
+    <div style="font-size:13px;color:#8e8e93;margin-bottom:28px">
+      Enter the access code to continue
+    </div>
+    <input id="pw" type="password" placeholder="Access code"
+      style="width:100%;padding:11px 14px;border:1.5px solid #d1d1d6;border-radius:10px;
+        font-size:15px;outline:none;margin-bottom:12px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')check()"
+      onfocus="this.style.borderColor='#1F4E79'"
+      onblur="this.style.borderColor='#d1d1d6'"/>
+    <div id="err" style="font-size:12px;color:#D85A30;margin-bottom:10px;min-height:16px"></div>
+    <button onclick="check()"
+      style="width:100%;padding:12px;background:#1F4E79;color:#fff;border:none;
+        border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">
+      Continue
+    </button>
+    <div style="font-size:11px;color:#c7c7cc;margin-top:20px">
+      Clearyst · Oppy US EPR Obligation Assessment · CY2025
+    </div>
+  </div>
+</div>
+<script>
+function check(){
+  const v=document.getElementById('pw').value;
+  // SHA-256 of password compared client-side — change HASH below to match your chosen password
+  // To generate a new hash: open browser console and run:
+  // crypto.subtle.digest('SHA-256',new TextEncoder().encode('yourpassword')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+  const HASH='PLACEHOLDER_HASH';
+  crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))
+    .then(b=>{
+      const h=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+      if(h===HASH){
+        document.getElementById('gate').style.display='none';
+        document.getElementById('root').style.display='block';
+      } else {
+        document.getElementById('err').textContent='Incorrect access code. Please try again.';
+        document.getElementById('pw').value='';
+        document.getElementById('pw').focus();
+      }
+    });
+}
+</script>
+
+<div id="root" style="display:none"></div>
+<script type="text/babel">
+const { useState } = React;
+const ST = ['CA','CO','OR','ME','MD','MN','WA'];
+const CA_OR = new Set(['CA','OR']);
+
+// ── NODES ────────────────────────────────────────────────────────────────────
+const NODES = {
+  A1:{ fa:'A',step:1,ey:'Filter A · Q1 of 6',
+    q:'Is the packaging reusable or durable?',
+    hint:'Drums, totes, reusable plastic containers (RPCs), reusable bins — designed to be returned and used again. Single-use corrugated, plastic bags, and clamshells are not reusable.',
+    choices:[
+      {l:'Yes — reusable / durable',c:'no',n:'OUT_REUSE'},
+      {l:'No — single-use packaging',c:'yes',n:'A2'}]},
+  A2:{ fa:'A',step:2,ey:'Filter A · Q2 of 6',
+    q:'Is it covered by another mandatory state program?',
+    hint:'e.g. CA Beverage Container Recycling (CRV), state bottle deposit programs. Packaging subject to these programs is excluded from EPR.',
+    choices:[
+      {l:'Yes — subject to another mandatory program',c:'no',n:'OUT_OTHER_PROG'},
+      {l:'No',c:'yes',n:'A3'}]},
+  A3:{ fa:'A',step:3,ey:'Filter A · Q3 of 6',
+    q:'What level of packaging is this?',
+    hint:'Primary: the immediate consumer container (clamshell, bag, consumer box). Secondary: master box or grouped unit (e.g. Costco floor-loaded case, or back-of-house retail shipper). Tertiary / shipping: outer transport packaging moving goods between businesses.',
+    choices:[
+      {l:'Primary — immediate consumer container',c:'yes',n:'A4'},
+      {l:'Secondary — master box or grouped unit',c:'yes',n:'A3_SEC'},
+      {l:'Tertiary / shipping — outer transport / B2B shipper',c:'rev',n:'A3_TERT'}]},
+  A3_SEC:{ fa:'A',step:3,ey:'Filter A · Q3b of 6',
+    q:'Does this secondary packaging reach the consumer at point of sale?',
+    hint:'If a consumer picks up the secondary unit directly (e.g. Costco floor-loaded tray), it is consumer-facing and covered in all 7 states. If it is a back-of-house logistics box unpacked by the retailer before shelf stocking, it is B2B secondary.',
+    ex:'Example: Costco floor-loaded master carton of berries a member picks up = consumer-facing, covered all states. Standard retail master box broken down in back room = B2B secondary, covered only in CA or OR.',
+    choices:[
+      {l:'Yes — consumer picks it up at point of sale (Costco-style)',c:'yes',n:'A4'},
+      {l:'No — back-of-house; retailer unpacks before shelf',c:'rev',n:'A3_SEC_B'}]},
+  A3_SEC_B:{ fa:'A',step:3,ey:'Filter A · Q3c of 6',
+    q:'Is the sold (destination) state California or Oregon?',
+    hint:'B2B secondary that never reaches a consumer is covered only in CA and OR. CO, ME, MD, MN, and WA restrict coverage to consumer-facing packaging (MD via exempt material definition §9-2501(L)(13); CO/ME/MN/WA via definitional exclusion).',
+    choices:[
+      {l:'Yes — CA or OR',c:'yes',n:'A4'},
+      {l:'No — CO, ME, MD, MN, or WA',c:'no',n:'OUT_SEC_B2B_EXEMPT'}]},
+  A3_TERT:{ fa:'A',step:3,ey:'Filter A · Q3b of 6',
+    q:'Is this a direct-to-consumer (DTC) shipment?',
+    hint:'If the outer shipping box is delivered directly to a household consumer (home delivery, e-commerce, CSA box), it is the packaging the consumer receives — covered in all 7 states. The B2B tertiary exclusion does not apply when there is no business intermediary as the recipient. NOTE: Oppy sells B2B only (no direct-to-consumer sales) — for Oppy, this branch will always resolve as B2B, meaning CO/MN/WA tertiary is NOT IN SCOPE and only CA/OR cover B2B tertiary.',
+    ex:'Example: Gift box of produce shipped to a consumer\'s home → outer box is DTC → covered all 7 states. Pallet shipped to a grocery distribution centre → B2B → only CA and OR cover it.',
+    choices:[
+      {l:'Yes — ships directly to a household consumer (DTC / e-commerce)',c:'yes',n:'A4'},
+      {l:'No — ships to a business (retailer, distributor, warehouse)',c:'rev',n:'A3_TERT_B2B'}]},
+  A3_TERT_B2B:{ fa:'A',step:3,ey:'Filter A · Q3c of 6',
+    q:'Is the sold (destination) state California or Oregon?',
+    hint:'B2B tertiary is covered in CA (§18980.2(b) — no B2B exclusion) and OR (SB 582-B §2(18)(a)(C) — packaging definition explicitly includes nondurable shipping materials). CO, ME, MD, MN, and WA exclude B2B tertiary at the covered material definition level.',
+    choices:[
+      {l:'Yes — CA or OR',c:'yes',n:'A4'},
+      {l:'No — CO, ME, MD, MN, or WA',c:'no',n:'OUT_TERT_B2B_EXEMPT'}]},
+  A4:{ fa:'A',step:4,ey:'Filter A · Q4 of 6',
+    q:'Does the CA grower-packer on-site exclusion apply?',
+    hint:'CA only: the producer both harvests AND packages on-site at the point of production (field-packing). If yes, that packaging is excluded from CA\'s covered material definition. This exclusion applies only to packaging applied at harvest — it does not extend to downstream shipping packaging subsequently added by a distributor.',
+    choices:[
+      {l:'Yes — harvested and packaged on-site in CA',c:'rev',n:'A4b'},
+      {l:'No / not applicable',c:'yes',n:'B1'}]},
+  A4b:{ fa:'A',step:4,ey:'Filter A · Q4b of 6',
+    q:'Also selling into other EPR states (OR, CO, ME, MD, MN, WA)?',
+    hint:'The CA on-site exclusion only removes CA obligation. Other EPR states\' definitions still apply.',
+    choices:[
+      {l:'Yes — also into other EPR states',c:'yes',n:'B1'},
+      {l:'No — CA only',c:'no',n:'OUT_GROWER_EXCL'}]},
+
+  B1:{ fa:'B',step:1,ey:'Filter B · Q1 of 4',
+    q:'Is there a retailer Private Label on the primary packaging?',
+    hint:'e.g. Kroger, Whole Foods 365, Albertsons Signature, Target Good & Gather. The retailer is the Tier 1 brand owner and obligated producer for primary and secondary. Tertiary obligation depends separately on who physically applied it — see Filter C.',
+    choices:[
+      {l:'Yes — retailer private label',c:'no',n:'C1_PL'},
+      {l:'No — no private label',c:'yes',n:'B2'}]},
+  B2:{ fa:'B',step:2,ey:'Filter B · Q2 of 4',
+    q:'Is Oppy\'s own brand on the primary packaging?',
+    hint:'Oppy, Oppy Blue, OP Select, or Frank & Able appears as the brand owner on primary packaging.',
+    choices:[
+      {l:'Yes — Oppy brand on primary',c:'yes',n:'C1_YES_ALL'},
+      {l:'No — another brand or unbranded',c:'',n:'B3'}]},
+  B3:{ fa:'B',step:3,ey:'Filter B · Q3 of 4',
+    q:'What is the Grower Label (GL) classification?',
+    hint:'Select the classification from the GL Classification tab in the workbook.',
+    choices:[
+      {l:'Licensed — Oppy controls packaging (Zespri, Ocean Spray, Envy/Jazz own warehouse)',c:'yes',n:'B3_LIC_YES'},
+      {l:'Licensed — program-dependent (Dole)',c:'rev',n:'C1_REVIEW_ALL'},
+      {l:'Licensed — Oppy is distributor only (Sungrape USA, Blue Diamond)',c:'no',n:'C1_NO_ALL'},
+      {l:'Oppy GL (OP, OPB, OPS, F&A) but Primary Brand is Oppy = no',c:'rev',n:'C1_REVIEW_ALL'},
+      {l:'US grower (Orchard View, EcoFarms, Oceanside Pole…)',c:'',n:'B3_US'},
+      {l:'Foreign grower (Gioia, Verfrut, Geofrut, Perpetual…)',c:'',n:'B3_FOR'},
+      {l:'Generic / blank GL (GE - Generic or blank)',c:'',n:'B3_GEN'},
+      {l:'Unclassified (grower not in GL lookup)',c:'rev',n:'B3_UNCLASS'},
+      {l:'Verify (AvoWorks)',c:'rev',n:'C1_REVIEW_ALL'}]},
+  B3_LIC_YES:{ fa:'B',step:3,ey:'Filter B · Q3b of 4',
+    q:'Is Oppy packing this product in its own warehouse?',
+    hint:'When Oppy packs in its own warehouse, Oppy controls vendor selection, packaging purchases, and packaging choices — Oppy directs manufacturing. When source-packed by growers or packhouses, Oppy does not control.',
+    choices:[
+      {l:'Yes — Oppy packs in own warehouse',c:'yes',n:'C1_LIC_OWN'},
+      {l:'No — source-packed by grower / packhouse',c:'rev',n:'C1_REVIEW_ALL'}]},
+  B3_US:{ fa:'B',step:3,ey:'Filter B · Q3b of 4',
+    q:'Does Oppy repack this product?',
+    hint:'Repack = Oppy applies new primary or secondary packaging at its own facility. If yes, Oppy is the manufacturer of that new packaging.',
+    choices:[
+      {l:'Yes — Oppy applies new packaging',c:'yes',n:'C1_YES_ALL'},
+      {l:'No — shipped as-is in grower\'s packaging',c:'no',n:'C1_NO_ALL'}]},
+  B3_FOR:{ fa:'B',step:3,ey:'Filter B · Q3b of 4',
+    q:'Does Oppy repack, or is Oppy the first party to sell or distribute this item in the state?',
+    // CHANGE 3: IOR → "first sells or distributes" language per §18980.1.1(f)(2)
+    hint:'Repack → Oppy applies new packaging → YES. First to sell or distribute in the EPR state (no other registered producer above) → YES. Note: CA\'s operative test is "first sells or distributes in the state" (§18980.1.1(f)(2)) — not customs Importer of Record (IOR) status. These can diverge in FRUP scenarios where another party was the customs importer but Oppy is the first to distribute in CA.',
+    choices:[
+      {l:'Yes — Oppy repacks or is first to sell/distribute in the EPR state',c:'yes',n:'C1_YES_ALL'},
+      {l:'No — FRUP scenario: another party imported first, not repacked',c:'rev',n:'C1_REVIEW_ALL'}]},
+  B3_GEN:{ fa:'B',step:3,ey:'Filter B · Q3b of 4',
+    q:'Does Oppy repack this product?',
+    hint:'For generic/unbranded items, obligation depends primarily on whether Oppy applies new packaging. Special case: Grapes + Bag + GE/blank + no Oppy brand = UNKNOWN primary brand per April 10 data notes.',
+    choices:[
+      {l:'Yes — Oppy repacks',c:'yes',n:'C1_YES_ALL'},
+      {l:'No — Grapes + Bag + no Oppy brand (primary brand data unknown)',c:'rev',n:'C1_GRAPE'},
+      {l:'No — other generic, not repacked',c:'rev',n:'C1_REVIEW_ALL'}]},
+  B3_UNCLASS:{ fa:'B',step:3,ey:'Filter B · Q3b of 4',
+    q:'Does Oppy repack this product?',
+    hint:'Even for unclassified growers, if Oppy applies new packaging, Oppy is obligated as the manufacturer of that new packaging.',
+    choices:[
+      {l:'Yes — Oppy repacks',c:'yes',n:'C1_YES_ALL'},
+      {l:'No — shipped as-is',c:'rev',n:'C1_REVIEW_ALL'}]},
+
+  C1_PL:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy apply new tertiary (shipping) packaging to this private-label product?',
+    hint:'Primary and secondary: the retailer (brand owner) is obligated — not Oppy. But tertiary obligation follows the act of applying packaging, independent of the primary brand. Under CA §18980.1.1(f)(1), if Oppy subsequently distributes a good using additional covered material packaging, Oppy is the producer of that additional packaging.',
+    choices:[
+      {l:'Yes — Oppy applied a new shipper / tertiary box',c:'yes',n:'OUT_PL_TERT_YES'},
+      {l:'No — shipped as-received in existing packaging',c:'no',n:'OUT_ALL_NO'}]},
+  C1_YES_ALL:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy also apply new tertiary (shipping) packaging?',
+    hint:'Oppy is already obligated for primary. Tertiary: if Oppy applied the shipper, Oppy is obligated for tertiary in CA and OR. CO/ME/MD/MN/WA: B2B tertiary excluded at covered material definition level.',
+    choices:[
+      {l:'Yes — Oppy applied new tertiary',c:'yes',n:'OUT_YES_WITH_TERT'},
+      {l:'No — shipped as-received',c:'no',n:'OUT_YES_NO_TERT'}]},
+  C1_LIC_OWN:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy apply new tertiary packaging?',
+    choices:[
+      {l:'Yes',c:'yes',n:'OUT_LIC_WITH_TERT'},
+      {l:'No',c:'no',n:'OUT_LIC_NO_TERT'}]},
+  C1_NO_ALL:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy apply new tertiary packaging to this product?',
+    hint:'Even when Oppy is not obligated for primary, if Oppy applies a new shipping box it is the producer of that tertiary packaging in CA (§18980.1.1(f)(1)) and OR (§3(1)(c)).',
+    choices:[
+      {l:'Yes — Oppy applied new tertiary',c:'yes',n:'OUT_NO_PRIM_TERT_YES'},
+      {l:'No — shipped as-received',c:'no',n:'OUT_ALL_NO'}]},
+  C1_REVIEW_ALL:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy apply new tertiary packaging?',
+    hint:'Primary is REVIEW-CONTRACT. Tertiary is independent — if Oppy applied the shipper, tertiary is YES in CA/OR regardless of how primary resolves.',
+    choices:[
+      {l:'Yes — Oppy applied new tertiary',c:'yes',n:'OUT_REVIEW_TERT_YES'},
+      {l:'No',c:'no',n:'OUT_REVIEW_NO_TERT'}]},
+  C1_GRAPE:{ fa:'C',step:1,ey:'Filter C · Tertiary packaging',
+    q:'Did Oppy apply new tertiary packaging?',
+    choices:[
+      {l:'Yes — Oppy applied new tertiary',c:'yes',n:'OUT_REVIEW_TERT_YES'},
+      {l:'No',c:'no',n:'OUT_GRAPE'}]},
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const oc = c => c==='yes'?'sc-yes':c==='no'?'sc-no':c==='rev'?'sc-rev':c==='cond'?'sc-cond':'sc-na';
+const bg = c => c==='yes'?'bg-yes':c==='no'?'bg-no':c==='rev'?'bg-rev':c==='cond'?'bg-cond':'bg-na';
+const lvbg = v => { const l=(v||'').toLowerCase();
+  return l.startsWith('yes')?'lv-yes':l.startsWith('no')?'lv-no':
+         l.includes('condition')||l.includes('confirm')?'lv-cond':
+         l==='n/a'||l.includes('review')||l.includes('unknown')?'lv-rev':'lv-na'; };
+
+// CHANGE 4 helper: build MD state cell with 5-tier hierarchy note
+const mdTier = (outcome) => {
+  if(outcome==='YES') return 'MD Tier 1 (own brand) or Tier 2 (licensee→mfg)';
+  if(outcome==='REVIEW') return 'MD: Tier 2 = "licensed to mfg AND sell to consumers" — B2B uncertain; or Tier 3 = brand owner';
+  return null;
+};
+
+// ── OUTCOMES ──────────────────────────────────────────────────────────────────
+// CA licensed brands: non-exclusive licence confirmed → CA = NO (brand owner is Tier 2)
+// Tertiary cites: §18980.1.1(f)(1)
+// CHANGE 4: MD state cells include Tier 3 (brand owner) note in licensed outcomes
+// CHANGE 5: MD B2B tertiary described as "exempt material §9-2501(L)(13)"
+
+const licSplit = (tertYes) => Object.fromEntries(ST.map(st => {
+  const co_or_me = ['CO','OR','ME'].includes(st);
+  const ca = st==='CA';
+  const md_mn_wa = ['MD','MN','WA'].includes(st);
+
+  // CHANGE 2: CA licensed brand → REVIEW-CONDITION (exclusivity)
+  let p, pc;
+  if(ca){
+    // Non-exclusive licence confirmed → Oppy fails CA Tier 1 (§18980.1.1(c)(1))
+    // Brand owner (OS/Zespri/T&G) has CA presence → brand owner is CA Tier 2 (§42041(w)(2))
+    p = 'NO — brand owner is CA Tier 2 (§42041(w)(2))';
+    pc = 'no';
+  } else if(co_or_me){
+    p = 'YES'; pc = 'yes';
+  } else {
+    p = 'REVIEW — consumer-sale test'; pc = 'rev';
+  }
+
+  // CHANGE 4: MD Tier 3 note
+  let tier;
+  if(ca) tier = 'CA Tier 2 = brand owner (§42041(w)(2)). Oppy fails Tier 1 (non-exclusive) and Tier 2 (not brand owner).';
+  else if(st==='CO') tier = 'Tier 2 (licensee + directs mfg)';
+  else if(co_or_me) tier = 'Tier 2 (licensee distributing in state)';
+  else if(st==='MD') tier = 'MD 5-tier: Tier 2 (licensee→consumers?) or Tier 3 (brand owner)';
+  else tier = 'Tier 2 (REVIEW — consumer-sale test)';
+
+  return [st, {
+    p, pc,
+    s: pc==='yes'?'YES':(pc==='cond'?'REVIEW — confirm exclusivity':'REVIEW'),
+    sc: pc,
+    t: tertYes?(CA_OR.has(st)?'YES — Oppy applied tertiary':'Not in scope'):'NO — not applied by Oppy',
+    tc: tertYes?(CA_OR.has(st)?'yes':'na'):'no',
+    tier
+  }];
+}));
+
+const OUTCOMES = {
+  OUT_REUSE:{ hd:'nc',title:'Not covered — reusable packaging',
+    reason:'Reusable and durable packaging (drums, totes, RPCs, bins) is excluded from the covered material definition in all 7 EPR states. EPR programs target single-use packaging.',
+    cite:'CA PRC §42041(b); CO CRS §25-17-703(8); OR SB 582-B §2(6)(b); ME 38 M.R.S. §2146; MN §115A.1441 subd.13; WA SB5284 §102(11); MD SB 901 §9-2501(L)',
+    lv:{p:'N/A',s:'N/A',t:'N/A'},
+    states:Object.fromEntries(ST.map(s=>[s,{p:'Not covered',pc:'na',s:'N/A',sc:'na',t:'N/A',tc:'na'}])) },
+
+  OUT_OTHER_PROG:{ hd:'nc',title:'Not covered — subject to another mandatory program',
+    reason:'Packaging already subject to another mandatory state recycling or deposit program (e.g. CA Beverage Container Recycling / CRV) is excluded from EPR coverage.',
+    cite:'CA PRC §42041(b); OR SB 582-B §2(6)(b)(I); state-specific exclusion provisions',
+    lv:{p:'N/A',s:'N/A',t:'N/A'},
+    states:Object.fromEntries(ST.map(s=>[s,{p:'Not covered',pc:'na',s:'N/A',sc:'na',t:'N/A',tc:'na'}])) },
+
+  // CHANGE 5: MD B2B secondary — "exempt material §9-2501(L)(13)"
+  OUT_SEC_B2B_EXEMPT:{ hd:'nc',title:'Not covered — B2B secondary (CO/ME/MD/MN/WA)',
+    reason:'This secondary packaging does not reach a consumer at point of sale. CO, ME, MN, and WA restrict coverage to consumer-facing packaging via their covered material definitions. MD achieves the same result through the exempt material definition (§9-2501(L)(13)) — packaging distributed producer-to-commercial entity that never reaches a consumer is exempt material. CA and OR do cover B2B secondary (explicit in their packaging definitions).',
+    cite:'CO CRS §25-17-703(8); ME 38 M.R.S. §2146; MN §115A.1441 subd.13; WA SB5284 §102(11); MD SB 901 §9-2501(L)(13) [exempt material — B2B only]; CA §18980.2(b); OR SB 582-B §2(18)(a)(C)',
+    lv:{p:'N/A — B2B secondary',s:'CA/OR: covered; CO/ME/MD/MN/WA: not covered',t:'N/A'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:CA_OR.has(st)?'Covered → Filter B':'Not covered',pc:CA_OR.has(st)?'rev':'na',
+      s:'N/A',sc:'na',t:'N/A',tc:'na'}])) },
+
+  // CHANGE 5: MD B2B tertiary — "exempt material §9-2501(L)(13)" + DTC note
+  OUT_TERT_B2B_EXEMPT:{ hd:'nc',title:'Not covered — B2B tertiary (CO/ME/MD/MN/WA)',
+    reason:'B2B tertiary shipping to a business recipient is excluded in CO, ME, MN, and WA via their covered material definitions, and in MD via the exempt material definition (§9-2501(L)(13) — B2B-only packaging is exempt material). However, MD §9-2501(N)(2)(i) expressly includes tertiary packaging "intended for the consumer market" — so DTC shipper boxes to households remain covered in MD. CA and OR explicitly include B2B transport packaging in their covered material definitions.',
+    cite:'CO CRS §25-17-703(25)(b)(II); ME 38 M.R.S. §2146; MN §115A.1441 subd.13; WA SB5284 §102(11); MD SB 901 §9-2501(L)(13) [B2B exempt] and §9-2501(N)(2)(i) [consumer-market tertiary covered]; CA §18980.2(b) [no B2B exclusion]; OR SB 582-B §2(18)(a)(C)',
+    lv:{p:'N/A (tertiary)',s:'N/A (tertiary)',t:'CA/OR: covered; CO/ME/MD/MN/WA: B2B not covered (DTC covered all states)'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'N/A (tertiary)',pc:'na',s:'N/A',sc:'na',
+      t:CA_OR.has(st)?'Covered → Filter B':'Not covered (B2B)',
+      tc:CA_OR.has(st)?'rev':'na'}])) },
+
+  OUT_GROWER_EXCL:{ hd:'nc',title:'Not covered — CA grower-packer on-site exclusion',
+    reason:'Producer harvests AND packages on-site in CA. That packaging is excluded from CA\'s covered material definition per PRC §42041(w)(4). This exclusion applies only to packaging applied at harvest — it does not extend to downstream shipping packaging subsequently added by a distributor. No other EPR state has an equivalent exclusion.',
+    cite:'CA PRC §42041(w)(4); CA §18980.1(17)(H) (agricultural commodity definition)',
+    lv:{p:'CA: not covered; Other EPR states: covered',s:'Follows primary',t:'Follows primary'},
+    states:Object.fromEntries(ST.map(st=>[st,{p:st==='CA'?'Not covered — §42041(w)(4)':'N/A (CA only)',pc:'na',s:'N/A',sc:'na',t:'N/A',tc:'na'}])) },
+
+  // CHANGE 1: tertiary cite → §18980.1.1(f)(1)
+  OUT_PL_TERT_YES:{ hd:'mixed',title:'Not obligated for primary/secondary — YES for tertiary (CA/OR)',
+    reason:'Retailer is brand owner → Oppy not obligated for primary or secondary. However, Oppy applied new tertiary packaging. Under CA §18980.1.1(f)(1), "if a person subsequently sells or distributes the good using additional covered material packaging, that person is the producer of the additional covered material items." This applies regardless of who owns the primary brand — obligation for tertiary follows the act of applying it.',
+    insight:'Whether the tertiary is unbranded or Oppy-branded, the obligation exists. The brand determines the tier; the act of application determines whether the obligation exists.',
+    cite:'CA §18980.1.1(f)(1) [person who applies additional tertiary is the producer]; OR SB 582-B §3(1)(c) ["person that first distributes the packaged item in or into this state"]; CO CRS §25-17-703(25)(b)(II) [CO B2B tertiary excluded]',
+    lv:{p:'NO',s:'NO',t:'CA/OR: YES — others: N/A'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'NO — retailer obligated',pc:'no',s:'NO',sc:'no',
+      t:CA_OR.has(st)?'YES — Oppy applied tertiary':'Not in scope',
+      tc:CA_OR.has(st)?'yes':'na',
+      tier:CA_OR.has(st)?'First distributor / additional packaging producer':null}])) },
+
+  OUT_ALL_NO:{ hd:'no',title:'Oppy not obligated — all packaging levels',
+    reason:'The brand owner (retailer, US grower, or licensed brand owner) is the Tier 1 obligated producer. Oppy shipped as-received with no new packaging applied at any level.',
+    cite:'CA PRC §42041(w)(1); CO 6 CCR 1007-2-18 §18.2.4(A)(1); OR SB 582-B §3(1)(a)(A)',
+    lv:{p:'NO',s:'NO',t:'NO'},
+    states:Object.fromEntries(ST.map(s=>[s,{p:'NO — brand owner obligated',pc:'no',s:'NO',sc:'no',t:'NO',tc:'no'}])) },
+
+  OUT_YES_WITH_TERT:{ hd:'yes',title:'Oppy obligated — primary, secondary, and tertiary (CA/OR)',
+    reason:'Oppy is obligated for primary (own brand or first to sell/distribute in state). Oppy also applied new tertiary packaging → obligated for tertiary in CA and OR per §18980.1.1(f)(1) and OR §3(1)(c). B2B tertiary is excluded in CO/ME/MD/MN/WA at the covered material definition level.',
+    cite:'CA PRC §42041(w)(1); CA §18980.1.1(f)(1) [tertiary]; OR SB 582-B §3(1)(a)(A),(1)(c); CO CRS §25-17-703(25)(b)(II)',
+    lv:{p:'YES',s:'YES',t:'CA/OR: YES — others: N/A'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'YES',pc:'yes',s:'YES',sc:'yes',
+      t:CA_OR.has(st)?'YES':'Not in scope',tc:CA_OR.has(st)?'yes':'na',
+      tier:st==='CA'?'Tier 1':null}])) },
+
+  OUT_YES_NO_TERT:{ hd:'yes',title:'Oppy obligated — primary and secondary; no new tertiary',
+    reason:'Oppy obligated for primary and secondary. No new tertiary applied — existing tertiary was applied by a prior supply chain party. Tertiary obligation does not arise for Oppy.',
+    cite:'CA PRC §42041(w)(1); OR SB 582-B §3(1)(a)(A)',
+    lv:{p:'YES',s:'YES',t:'NO (not applied by Oppy)'},
+    states:Object.fromEntries(ST.map(s=>[s,{p:'YES',pc:'yes',s:'YES',sc:'yes',t:'NO — not applied by Oppy',tc:'no'}])) },
+
+  // CHANGE 2: CA licensed → REVIEW-CONDITION; CHANGE 1: tertiary cite; CHANGE 4: MD Tier 3
+  OUT_LIC_WITH_TERT:{ hd:'mixed',title:'Licensed brand — obligated with tertiary (state-by-state breakdown)',
+    reason:'Oppy obligated as licensee for primary in CO/OR/ME (Tier 2). MD/MN/WA: REVIEW on consumer-sale nexus. CA: NO — Oppy holds a non-exclusive licence and therefore fails CA Tier 1 (§18980.1.1(c)(1) requires exclusive licence). The brand owner (OS/Zespri/T&G — all with CA presence) is CA Tier 2 (§42041(w)(2)) and is the obligated producer. Oppy applied new tertiary → obligated for tertiary in CA/OR per §18980.1.1(f)(1) (independent of primary brand obligation).',
+    condition:'CA REGISTRATION CAVEAT: The CA=NO outcome for primary holds only if the brand owner (OS, Zespri, T&G/EnzaFruit) is registered with CAA as the Tier 2 producer. If they are not registered, the obligation cascades to Oppy as the first seller/distributor into CA per §42041(w)(3) / §18980.1.1(f)(2). Confirm brand owner CAA registration — urgent given the May 31 2026 CA reporting deadline.',
+    insight:'Tertiary obligation in CA/OR is independent of the primary REVIEW — it follows the act of applying the packaging. Even if primary in CA/MD ultimately resolves to NO, the tertiary YES for CA/OR stands.',
+    cite:'CA §18980.1.1(c)(1) [Tier 1 exclusivity condition]; CA §18980.1.1(f)(1) [tertiary]; CO 6 CCR 1007-2-18 §18.2.4(A)(2) [Tier 2]; OR SB 582-B §3(1)(a)(B),(1)(c); MD SB 901 §9-2501(P)(1)(i)(2) [Tier 2] and §9-2501(P)(1)(i)(3) [Tier 3 brand owner]; MN §115A.1441 subd.26(a)(1)(ii); WA SB5284 §102(29)(a)(i)(B)',
+    lv:{p:'CA: NO (brand owner Tier 2) | CO/OR/ME: YES | MD/MN/WA: REVIEW',s:'Follows primary',t:'CA/OR: YES — others: N/A'},
+    states:licSplit(true) },
+
+  OUT_LIC_NO_TERT:{ hd:'mixed',title:'Licensed brand — obligated, no new tertiary (state-by-state breakdown)',
+    reason:'Oppy obligated as licensee in CO/OR/ME (Tier 2). MD/MN/WA: REVIEW on consumer-sale nexus. CA: NO — Oppy holds a non-exclusive licence, fails CA Tier 1 (§18980.1.1(c)(1)). Brand owner (OS/Zespri/T&G, all with CA presence) is CA Tier 2 (§42041(w)(2)) and is the obligated producer. No new tertiary applied.',
+    condition:'CA REGISTRATION CAVEAT: CA=NO for primary holds only if the brand owner is registered with CAA as Tier 2. If not registered, obligation cascades to Oppy as first seller/distributor (§42041(w)(3)). Confirm brand owner CAA registration — urgent for May 31 2026 CA deadline.',
+    cite:'CA §18980.1.1(c)(1) [Tier 1 exclusivity]; CO 6 CCR 1007-2-18 §18.2.4(A)(2); OR SB 582-B §3(1)(a)(B); MD SB 901 §9-2501(P)(1)(i)(2),(3); MN §115A.1441 subd.26(a)(1)(ii); WA SB5284 §102(29)(a)(i)(B)',
+    lv:{p:'CA: NO (brand owner Tier 2) | CO/OR/ME: YES | MD/MN/WA: REVIEW',s:'Follows primary',t:'NO (not applied by Oppy)'},
+    states:licSplit(false) },
+
+  // CHANGE 1: tertiary cite
+  OUT_NO_PRIM_TERT_YES:{ hd:'mixed',title:'Not obligated for primary/secondary — YES for tertiary (CA/OR)',
+    reason:'Brand owner (US grower or licensed brand owner) is Tier 1 → NO for Oppy on primary and secondary. However, Oppy applied new tertiary packaging. Under CA §18980.1.1(f)(1) and OR §3(1)(c), Oppy is the producer of that additional packaging regardless of who owns the primary brand.',
+    insight:'An unbranded shipper applied by Oppy creates an Oppy obligation in CA and OR. The brand determines the tier; the act of application determines whether the obligation exists.',
+    cite:'CA §18980.1.1(f)(1) [person who applies additional tertiary is the producer]; OR SB 582-B §3(1)(c); CO CRS §25-17-703(25)(b)(II)',
+    lv:{p:'NO',s:'NO',t:'CA/OR: YES — others: N/A'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'NO — brand owner obligated',pc:'no',s:'NO',sc:'no',
+      t:CA_OR.has(st)?'YES — Oppy applied tertiary':'Not in scope',
+      tc:CA_OR.has(st)?'yes':'na',
+      tier:CA_OR.has(st)?'§18980.1.1(f)(1) — additional packaging producer':null}])) },
+
+  OUT_REVIEW_TERT_YES:{ hd:'mixed',title:'Primary REVIEW — tertiary YES (CA/OR) because Oppy applied it',
+    reason:'Primary is under review (contract or facts-dependent). Tertiary is independently YES in CA/OR because Oppy applied the packaging. Under §18980.1.1(f)(1), this is independent of who owns or is obligated for the primary packaging.',
+    insight:'Even if primary ultimately resolves to NO, the CA/OR tertiary YES stands because Oppy was the party who physically introduced the additional packaging.',
+    cite:'CA §18980.1.1(f)(1); OR SB 582-B §3(1)(c)',
+    lv:{p:'REVIEW-CONTRACT',s:'REVIEW',t:'CA/OR: YES — others: N/A'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'REVIEW-CONTRACT',pc:'rev',s:'REVIEW',sc:'rev',
+      t:CA_OR.has(st)?'YES — Oppy applied tertiary':'Not in scope',
+      tc:CA_OR.has(st)?'yes':'na',
+      tier:CA_OR.has(st)?'§18980.1.1(f)(1)':null}])) },
+
+  OUT_REVIEW_NO_TERT:{ hd:'review',title:'Primary REVIEW — no new tertiary applied',
+    reason:'Primary requires contract or facts review. No new tertiary applied, so tertiary obligation does not arise independently.',
+    cite:'See primary determination sources',
+    lv:{p:'REVIEW-CONTRACT',s:'REVIEW',t:'NO (not applied by Oppy)'},
+    states:Object.fromEntries(ST.map(s=>[s,{p:'REVIEW-CONTRACT',pc:'rev',s:'REVIEW',sc:'rev',t:'NO — not applied by Oppy',tc:'no'}])) },
+
+  OUT_GRAPE:{ hd:'review',title:'Unknown — Grapes + Bag + GE/blank, no Oppy brand',
+    reason:'Per April 10 meeting: primary brand is genuinely unknown for the Grapes + Bag + GE/blank GL + Primary Brand is Oppy = no configuration. Sungrape does its own reporting. Only Ocean Spray is tracked by Oppy. Better data expected at End-of-Season.',
+    cite:'April 10 meeting notes; Brand Rules tab in workbook',
+    lv:{p:'UNKNOWN',s:'UNKNOWN',t:'REVIEW'},
+    states:Object.fromEntries(ST.map(st=>[st,{
+      p:'UNKNOWN — await EOS data',pc:'rev',s:'UNKNOWN',sc:'rev',
+      t:CA_OR.has(st)?'REVIEW':'Not in scope',tc:'rev'}])) },
+};
+
+// ── APP ───────────────────────────────────────────────────────────────────────
+const STEPS=11;
+const POS={A1:1,A2:2,A3:3,A3_SEC:3,A3_SEC_B:4,A3_TERT:3,A3_TERT_B2B:4,A4:5,A4b:5,
+           B1:6,B2:7,B3:8,B3_LIC_YES:8,B3_US:8,B3_FOR:8,B3_GEN:8,B3_UNCLASS:8,
+           C1_PL:9,C1_YES_ALL:9,C1_LIC_OWN:9,C1_NO_ALL:9,C1_REVIEW_ALL:9,C1_GRAPE:9};
+
+const fl=id=>id?.startsWith('A')?'Filter A — Covered materials':
+              id?.startsWith('B')?'Filter B — Producer determination':
+              id?.startsWith('C')?'Filter C — Packaging application':'Result';
+const fc=id=>id?.startsWith('A')?'fa':id?.startsWith('B')?'fb':'fc';
+const icons={yes:'✅',no:'❌',nc:'⊘',mixed:'◑',review:'⚠️',cond:'🔍'};
+const hdrMap={yes:'hdr-yes',no:'hdr-no',nc:'hdr-nc',mixed:'hdr-mix',review:'hdr-rev',cond:'hdr-cond'};
+const tMap={yes:'t-yes',no:'t-no',nc:'t-nc',mixed:'t-mix',review:'t-rev',cond:'t-cond'};
+
+function App() {
+  const [node, setNode] = useState('A1');
+  const [outKey, setOutKey] = useState(null);
+  const [hist, setHist] = useState([]);
+
+  function pick(nodeId, choice) {
+    const lbl=choice.l.length>50?choice.l.slice(0,50)+'…':choice.l;
+    setHist(h=>[...h,{l:lbl,f:fc(nodeId)}]);
+    if(OUTCOMES[choice.n]){setOutKey(choice.n);setNode(null);}
+    else if(NODES[choice.n]){setNode(choice.n);setOutKey(null);}
+  }
+  function restart(){setNode('A1');setOutKey(null);setHist([]);}
+
+  const nd=node?NODES[node]:null;
+  const out=outKey?OUTCOMES[outKey]:null;
+  const step=POS[node]||(out?STEPS:1);
+  const segs=Array.from({length:STEPS},(_,i)=>
+    out?'done':i+1<step?'done':i+1===step?'active':'');
+
+  return (
+    <div>
+      <div className="header">
+        <h1>Oppy US EPR Obligation Decision Tree</h1>
+        <p>Two-filter assessment: Covered Materials (A) → Producer Determination (B) → Packaging Application (C)<br/>
+           7 EPR states: CA · CO · OR · ME · MD · MN · WA</p>
+        <div className="ver-badge">v5 — Verified: OR SB 582-B · MD SB 901 · CA §18980.1.1 · CA licensed brands: non-exclusive → brand owner is CA Tier 2 · CO/MN/WA B2B tertiary excluded (Oppy B2B only) · Pending: CO 6 CCR · MN §115A.1441 · WA SB5284 · ME deferred</div>
+      </div>
+
+      <div className="prog-wrap">
+        <div className="prog-bar">{segs.map((s,i)=><div key={i} className={`prog-seg ${s}`}/>)}</div>
+        <div className="prog-label">{out?'Result':fl(node)}</div>
+      </div>
+      <div className="crumb">{hist.map((h,i)=><span key={i} className={`crumb-item ${h.f}`}>{h.l}</span>)}</div>
+
+      {nd && (
+        <div className="q-card">
+          <div className="q-eye">{nd.ey}</div>
+          <div className="q-text">{nd.q}</div>
+          {nd.hint && <div className="q-hint">{nd.hint}{nd.ex&&<div className="q-ex">{nd.ex}</div>}</div>}
+          {nd.warning && <div className="q-warning">⚠️ {nd.warning}</div>}
+          <div className="btn-row">
+            {nd.choices.map((ch,i)=>(
+              <button key={i} className={`btn ${ch.c}`} onClick={()=>pick(node,ch)}>{ch.l}</button>
+            ))}
+          </div>
+          {hist.length>0&&<button className="btn-restart" onClick={restart}>↩ Start over</button>}
+        </div>
+      )}
+
+      {out && (
+        <>
+          <div className="result">
+            <div className={`result-hdr ${hdrMap[out.hd]}`}>
+              <div className="result-icon">{icons[out.hd]||'◑'}</div>
+              <div>
+                <div className={`result-title ${tMap[out.hd]}`}>{out.title}</div>
+                <div className="result-sub">Primary (P) · Secondary (S) · Tertiary (T) shown per state</div>
+              </div>
+            </div>
+
+            <div className="lvl-band">
+              {['Primary','Secondary','Tertiary'].map((lv,i)=>{
+                const v=[out.lv.p,out.lv.s,out.lv.t][i];
+                return <div key={lv} className="lvl-pill">
+                  <div className="lvl-label">{lv}</div>
+                  <div className={`lvl-val ${lvbg(v)}`}>{v}</div>
+                </div>;
+              })}
+            </div>
+
+            <div className="reason">
+              <div>{out.reason}</div>
+              {out.condition && <div className="condition">🔍 <strong>Condition required: </strong>{out.condition}</div>}
+              {out.insight   && <div className="insight">💡 <strong>Key principle: </strong>{out.insight}</div>}
+              {/* CHANGE 6: MD/MN/WA pending note */}
+              <div className="pending">📋 <strong>Verification status: </strong>
+                OR and MD verified against primary bill text this session.
+                CA verified against final regulation text (CalRecycle May 5 2026).
+                CO 6 CCR 1007-2, MN §115A.1441, and WA SB5284 are treated as similar to CO
+                pending full primary-source verification. ME deferred.
+              </div>
+            </div>
+
+            <div className="state-grid">
+              {Object.entries(out.states).map(([st,sd])=>{
+                const over=sd.pc==='yes'||sd.tc==='yes'||sd.sc==='yes'?'bg-yes':
+                           sd.pc==='cond'||sd.tc==='cond'?'bg-cond':
+                           sd.pc==='rev'||sd.tc==='rev'?'bg-rev':
+                           sd.pc==='no'&&(sd.tc==='no'||sd.tc==='na')?'bg-no':'bg-na';
+                return <div key={st} className={`state-cell ${over}`}>
+                  <div className="state-name">{st}</div>
+                  <div className={`state-row ${oc(sd.pc)}`}>P: {sd.p}</div>
+                  {sd.s!==undefined&&<div className={`state-row ${oc(sd.sc)}`}>S: {sd.s}</div>}
+                  <div className={`state-row ${oc(sd.tc)}`}>T: {sd.t}</div>
+                  {sd.tier&&<div className="state-tier">{sd.tier}</div>}
+                </div>;
+              })}
+            </div>
+
+            <div className="cite">📖 {out.cite}</div>
+          </div>
+
+          <div className="restart-row">
+            <button className="btn-new" onClick={restart}>↩ Classify another item</button>
+          </div>
+        </>
+      )}
+
+      <div className="footer">
+        Oppy EPR Obligation Assessment · CY2025 · For internal compliance use only<br/>
+        Verified statutes: CA SB 54 Final Reg (May 5 2026) · OR SB 582-B (2021) · MD SB 901 (2025)<br/>
+        CO/MN/WA B2B tertiary: excluded (Oppy sells B2B only — DTC not applicable) · CO 6 CCR, MN §115A.1441, WA SB5284 pending full verification<br/>
+        ME deferred · Last updated: June 2026
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
