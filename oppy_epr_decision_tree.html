@@ -170,7 +170,7 @@ function check(){
   // SHA-256 of password compared client-side — change HASH below to match your chosen password
   // To generate a new hash: open browser console and run:
   // crypto.subtle.digest('SHA-256',new TextEncoder().encode('yourpassword')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
-  const HASH='PLACEHOLDER_HASH';
+  const HASH='0518414b6d0a8d3a023a302a3a6453e3246bab738044bca490c9cadf5066d27c';
   crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))
     .then(b=>{
       const h=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
